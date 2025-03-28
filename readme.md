@@ -69,7 +69,7 @@ Création d'un document (POST /api/documents)
 "folderId": 2,
 "parentDocumentId": 1,
 "versionIds": [],
-"tags": ["projet", "mise à jour", "validation"],
+"tags": ["projet", "mise à jour", "validation"],    
 "metadata": {
 "auteur": "John Smith",
 "département": "Gestion de projet",
