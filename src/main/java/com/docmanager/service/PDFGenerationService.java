@@ -5,16 +5,13 @@ import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 public class PDFGenerationService {
-
     public byte[] generateApiDocumentation(APIServiceDTO apiService) throws DocumentException {
         Document document = new Document(PageSize.A4);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -35,14 +32,12 @@ public class PDFGenerationService {
             throw new DocumentException("Failed to generate PDF: " + e.getMessage());
         }
     }
-
     private void addMetadata(Document document, APIServiceDTO apiService) {
         document.addTitle(apiService.getName() + " - API Documentation");
         document.addSubject("Technical Documentation for " + apiService.getTrigramme());
         document.addKeywords("API, Documentation, " + apiService.getTrigramme());
         document.addCreator("Doc Manager System");
     }
-
     private void addTitle(Document document, APIServiceDTO apiService) throws DocumentException {
         Font titleFont = new Font(Font.FontFamily.HELVETICA, 18, Font.BOLD, BaseColor.DARK_GRAY);
         Paragraph title = new Paragraph(apiService.getName() + " (" + apiService.getTrigramme() + ")", titleFont);
@@ -58,7 +53,6 @@ public class PDFGenerationService {
         date.setSpacingAfter(20);
         document.add(date);
     }
-
     private void addServiceInfo(Document document, APIServiceDTO apiService) throws DocumentException {
         Font sectionFont = new Font(Font.FontFamily.HELVETICA, 14, Font.BOLD, BaseColor.DARK_GRAY);
         Paragraph sectionTitle = new Paragraph("Service Overview", sectionFont);
@@ -85,7 +79,6 @@ public class PDFGenerationService {
 
         document.add(Chunk.NEWLINE);
     }
-
     private void addInfrastructureInfo(Document document, APIServiceDTO apiService) throws DocumentException {
         Font sectionFont = new Font(Font.FontFamily.HELVETICA, 14, Font.BOLD, BaseColor.DARK_GRAY);
         Paragraph sectionTitle = new Paragraph("Infrastructure", sectionFont);
@@ -115,7 +108,6 @@ public class PDFGenerationService {
 
         document.add(Chunk.NEWLINE);
     }
-
     private void addDataSourcesInfo(Document document, APIServiceDTO apiService) throws DocumentException {
         Font sectionFont = new Font(Font.FontFamily.HELVETICA, 14, Font.BOLD, BaseColor.DARK_GRAY);
         Paragraph sectionTitle = new Paragraph("Data Sources", sectionFont);
@@ -159,7 +151,6 @@ public class PDFGenerationService {
 
         document.add(Chunk.NEWLINE);
     }
-
     private void addConsumerInfo(Document document, APIServiceDTO apiService) throws DocumentException {
         Font sectionFont = new Font(Font.FontFamily.HELVETICA, 14, Font.BOLD, BaseColor.DARK_GRAY);
 
@@ -201,7 +192,6 @@ public class PDFGenerationService {
 
         document.add(Chunk.NEWLINE);
     }
-
     private void addEndpointsInfo(Document document, APIServiceDTO apiService) throws DocumentException {
         Font sectionFont = new Font(Font.FontFamily.HELVETICA, 14, Font.BOLD, BaseColor.DARK_GRAY);
         Paragraph sectionTitle = new Paragraph("API Endpoints", sectionFont);
@@ -217,7 +207,6 @@ public class PDFGenerationService {
             document.add(new Paragraph("No endpoints available."));
         }
     }
-
     private void addEndpointDetails(Document document, EndpointDTO endpoint) throws DocumentException {
         Font methodFont = new Font(Font.FontFamily.COURIER, 11, Font.BOLD);
         if ("GET".equalsIgnoreCase(endpoint.getMethod())) {
@@ -276,7 +265,6 @@ public class PDFGenerationService {
 
         document.add(Chunk.NEWLINE);
     }
-
     private void addTableRow(PdfPTable table, String label, String value, Font labelFont, Font valueFont) {
         PdfPCell labelCell = new PdfPCell(new Phrase(label, labelFont));
         labelCell.setBorder(Rectangle.NO_BORDER);
@@ -288,7 +276,6 @@ public class PDFGenerationService {
         valueCell.setPadding(5);
         table.addCell(valueCell);
     }
-
     private void addListToDocument(Document document, List<String> items) throws DocumentException {
         com.itextpdf.text.List list = new com.itextpdf.text.List(com.itextpdf.text.List.ORDERED);
         list.setIndentationLeft(30);

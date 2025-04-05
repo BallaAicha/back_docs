@@ -2,9 +2,7 @@ package com.docmanager.dto.apis.usecases;
 import com.docmanager.dto.apis.APIServiceDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
 import java.util.UUID;
-
 @Service
 @RequiredArgsConstructor
 public class GetServiceByIdImpl implements GetServiceById {
