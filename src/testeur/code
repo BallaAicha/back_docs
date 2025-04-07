@@ -56,3 +56,31 @@ public interface DocumentAPI extends
     List<DocumentVersionDTO> handle(GetLatestDocumentVersionsRequest input,
                                     @GraphQLRootContext @ModelAttribute RequestContext ctx);
 }
+
+
+
+@Service
+@RequiredArgsConstructor
+public class GetLatestDocumentVersionsImpl implements GetLatestDocumentVersions {
+
+    private final DocumentRepository documentRepository;
+
+    @Override
+    public List<DocumentVersionDTO> handle(GetLatestDocumentVersionsRequest input, RequestContext context) {
+        // Récupérer toutes les versions existantes de documents sous forme de DTO
+        List<DocumentVersionDTO> allDocuments = documentRepository.findAll();
+
+        // Grouper par parentId s'il existe, sinon grouper par document id lui-même
+        Map<Long, Optional<DocumentVersionDTO>> latestByParentId = allDocuments.stream()
+            .collect(Collectors.groupingBy(
+                dto -> dto.getParentDocumentId() != null ? dto.getParentDocumentId() : dto.getId(),
+                Collectors.maxBy(Comparator.comparing(DocumentVersionDTO::getUpdatedAt))
+            ));
+
+        // Transformers la map en liste des dernières versions
+        return latestByParentId.values().stream()
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .collect(Collectors.toList());
+    }
+}
