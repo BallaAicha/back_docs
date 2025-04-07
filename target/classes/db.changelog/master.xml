@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.5.xsd">
+
+    <!-- Première étape: créer les tables indépendantes -->
+    <changeSet id="1-create-independent-tables" author="docmanager">
+        <!-- Infrastructure table -->
+        <createTable tableName="infrastructure">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="url_int" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="url_uat" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="url_oat" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="url_prod" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- DataSources table -->
+        <createTable tableName="data_sources">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="rabbit_mq" type="boolean"/>
+            <column name="common_db" type="boolean"/>
+            <column name="dedicated_db" type="boolean"/>
+            <column name="s3" type="boolean"/>
+        </createTable>
+    </changeSet>
+
+    <!-- Deuxième étape: créer la table api_service qui dépend des tables précédentes -->
+    <changeSet id="2-create-api-service-table" author="docmanager">
+        <!-- APIService table -->
+        <createTable tableName="api_service">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="trigramme" type="varchar(3)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="varchar(255)"/>
+            <column name="infrastructure_id" type="uuid">
+                <constraints nullable="true"/>
+            </column>
+            <column name="data_sources_id" type="uuid">
+                <constraints nullable="true"/>
+            </column>
+            <column name="database_schema" type="varchar(255)"/>
+            <column name="created_at" type="timestamp"/>
+            <column name="updated_at" type="timestamp"/>
+        </createTable>
+    </changeSet>
+
+    <!-- Troisième étape: créer les contraintes de clé étrangère pour api_service -->
+    <changeSet id="3-create-api-service-foreign-keys" author="docmanager">
+        <addForeignKeyConstraint baseTableName="api_service"
+                                 baseColumnNames="infrastructure_id"
+                                 constraintName="fk_api_service_infrastructure"
+                                 referencedTableName="infrastructure"
+                                 referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="api_service"
+                                 baseColumnNames="data_sources_id"
+                                 constraintName="fk_api_service_data_sources"
+                                 referencedTableName="data_sources"
+                                 referencedColumnNames="id"/>
+    </changeSet>
+
+    <!-- Quatrième étape: créer les tables qui dépendent de api_service -->
+    <changeSet id="4-create-dependent-tables" author="docmanager">
+        <!-- ClientConsumer table -->
+        <createTable tableName="client_consumer">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="service_id" type="uuid">
+                <constraints nullable="true"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- ConsumedBy table -->
+        <createTable tableName="consumed_by">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="service_id" type="uuid">
+                <constraints nullable="true"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Consumes table -->
+        <createTable tableName="consumes">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="service_id" type="uuid">
+                <constraints nullable="true"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Endpoint table -->
+        <createTable tableName="endpoint">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="service_id" type="uuid">
+                <constraints nullable="true"/>
+            </column>
+            <column name="method" type="varchar(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="path" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="curl" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expected_response" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="varchar(255)"/>
+        </createTable>
+    </changeSet>
+
+    <!-- Cinquième étape: ajouter les contraintes de clé étrangère pour les tables dépendantes -->
+    <changeSet id="5-create-dependent-tables-foreign-keys" author="docmanager">
+        <addForeignKeyConstraint baseTableName="client_consumer"
+                                 baseColumnNames="service_id"
+                                 constraintName="fk_client_consumer_service"
+                                 referencedTableName="api_service"
+                                 referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="consumed_by"
+                                 baseColumnNames="service_id"
+                                 constraintName="fk_consumed_by_service"
+                                 referencedTableName="api_service"
+                                 referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="consumes"
+                                 baseColumnNames="service_id"
+                                 constraintName="fk_consumes_service"
+                                 referencedTableName="api_service"
+                                 referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="endpoint"
+                                 baseColumnNames="service_id"
+                                 constraintName="fk_endpoint_service"
+                                 referencedTableName="api_service"
+                                 referencedColumnNames="id"/>
+    </changeSet>
+</databaseChangeLog>
