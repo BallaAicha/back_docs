@@ -14,15 +14,7 @@ public class CreateAPIServiceRequest {
     private String trigramme;
     private String description;
 
-    // Nouveaux attributs
-    private boolean bridgeCommunication;
-    private String criticality;
-    private String poCoedev;
-    private String techlead;
-    private boolean java17Migrated;
-    private boolean sonarized;
-    private String sonarReportUrl;
-    private String version;
+
 
 
 

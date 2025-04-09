@@ -1,88 +1,212 @@
-public interface GetLatestDocumentVersions extends Query {
-    List<DocumentVersionDTO> handle(GetLatestDocumentVersionsRequest input, RequestContext context);
+<!-- db.changelog-add-new-fields-api_service.xml -->
+
+<changeSet author="your-name" id="add-columns-to-api-service">
+    <addColumn tableName="api_service">
+        <column name="bridge_communication" type="boolean">
+            <constraints nullable="false"/>
+        </column>
+        <column name="criticality" type="varchar(255)"/>
+        <column name="po_coedev" type="varchar(255)"/>
+        <column name="techlead" type="varchar(255)"/>
+        <column name="java17_migrated" type="boolean">
+            <constraints nullable="false"/>
+        </column>
+        <column name="sonarized" type="boolean">
+            <constraints nullable="false"/>
+        </column>
+        <column name="sonar_report_url" type="varchar(512)"/>
+        <column name="version" type="varchar(50)"/>
+    </addColumn>
+</changeSet>
+
+
+
+
+package com.docmanager.dto.apis;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class CreateAPIServiceRequest {
+    private String name;
+    private String trigramme;
+    private String description;
+
+    // Nouveaux attributs ajoutés
+    private boolean bridgeCommunication;
+    private String criticality;
+    private String poCoedev;
+    private String techlead;
+    private boolean java17Migrated;
+    private boolean sonarized;
+    private String sonarReportUrl;
+    private String version;
+
+    private String databaseSchema;
+    private InfrastructureDTO infrastructure;
+    private DataSourcesDTO dataSources;
+    private List<String> clientConsumers;
+    private List<String> consumes;
+    private List<String> consumedBy;
+    private List<EndpointDTO> endpoints;
 }
 
 
 
-@Service
-@RequiredArgsConstructor
-public class GetLatestDocumentVersionsImpl implements GetLatestDocumentVersions {
 
-    private final DocumentRepository documentRepository;
 
-    @Override
-    public List<DocumentVersionDTO> handle(GetLatestDocumentVersionsRequest input, RequestContext context) {
-        List<DocumentEntity> allDocuments = documentRepository.findAll();
 
-        List<DocumentVersionDTO> latestVersions = allDocuments.stream()
-            .map(doc -> documentRepository.findTopByParentDocumentIdOrderByUpdatedAtDesc(doc.getId())
-                .orElse(doc))
-            .map(DocumentVersionDTO::fromEntity)
-            .collect(Collectors.toList());
+package com.docmanager.dto.apis;
 
-        return latestVersions;
-    }
+import lombok.Data;
+
+import java.util.List;
+import java.util.UUID;
+
+@Data
+public class APIServiceDTO {
+    private UUID id;
+    private String name;
+    private String trigramme;
+    private String description;
+
+    // Nouveaux attributs ajoutés
+    private boolean bridgeCommunication;
+    private String criticality;
+    private String poCoedev;
+    private String techlead;
+    private boolean java17Migrated;
+    private boolean sonarized;
+    private String sonarReportUrl;
+    private String version;
+
+    private InfrastructureDTO infrastructure;
+    private DataSourcesDTO dataSources;
+    private List<String> clientConsumers;
+    private List<String> consumes;
+    private List<String> consumedBy;
+    private List<EndpointDTO> endpoints;
+    private String databaseSchema;
 }
 
 
 
-@Getter
-@Setter
-public class GetLatestDocumentVersionsRequest {
-    // Possible fields if you have filter criteria
+
+
+
+public APIServiceDTO toDTO(APIService entity) {
+    APIServiceDTO dto = new APIServiceDTO();
+    dto.setId(entity.getId());
+    dto.setName(entity.getName());
+    dto.setTrigramme(entity.getTrigramme());
+    dto.setDescription(entity.getDescription());
+    dto.setDatabaseSchema(entity.getDatabaseSchema());
+
+    // Nouveaux attributs ajoutés
+    dto.setBridgeCommunication(entity.isBridgeCommunication());
+    dto.setCriticality(entity.getCriticality());
+    dto.setPoCoedev(entity.getPoCoedev());
+    dto.setTechlead(entity.getTechlead());
+    dto.setJava17Migrated(entity.isJava17Migrated());
+    dto.setSonarized(entity.isSonarized());
+    dto.setSonarReportUrl(entity.getSonarReportUrl());
+    dto.setVersion(entity.getVersion());
+
+    // Infrastructure
+    dto.setInfrastructure(toInfrastructureDTO(entity.getInfrastructure()));
+
+    // DataSources
+    dto.setDataSources(toDataSourceDTO(entity.getDataSources()));
+
+    dto.setClientConsumers(entity.getClientConsumers()
+            .stream().map(ClientConsumer::getName).toList());
+
+    dto.setConsumes(entity.getConsumes()
+            .stream().map(Consumes::getName).toList());
+
+    dto.setConsumedBy(entity.getConsumedBy()
+            .stream().map(ConsumedBy::getName).toList());
+
+    dto.setEndpoints(entity.getEndpoints()
+            .stream().map(this::toEndpointDTO).toList());
+
+    return dto;
 }
 
 
 
 
-public interface DocumentRepository extends JpaRepository<DocumentEntity, Long> {
-    Optional<DocumentEntity> findTopByParentDocumentIdOrderByUpdatedAtDesc(Long parentId);
-}
-
-
-
-public interface DocumentAPI extends
-    GetDocumentsByFolder,
-    GetDocumentVersions,
-    GetLatestDocumentVersions // ⬅️ Ajout ici
 {
-    @Operation(
-        summary = "Récupérer la dernière version de chaque document",
-        parameters = {@Parameter(ref = "entityIdHeader", required = true)}
-    )
-    @GetMapping("/documents/latest-versions")
-    @GraphQLQuery(name = "latestDocumentVersions")
-    @Override
-    List<DocumentVersionDTO> handle(GetLatestDocumentVersionsRequest input,
-                                    @GraphQLRootContext @ModelAttribute RequestContext ctx);
-}
-
-
-
-@Service
-@RequiredArgsConstructor
-public class GetLatestDocumentVersionsImpl implements GetLatestDocumentVersions {
-
-    private final DocumentRepository documentRepository;
-
-    @Override
-    public List<DocumentVersionDTO> handle(GetLatestDocumentVersionsRequest input, RequestContext context) {
-        // Récupérer toutes les versions existantes de documents sous forme de DTO
-        List<DocumentVersionDTO> allDocuments = documentRepository.findAll();
-
-        // Grouper par parentId s'il existe, sinon grouper par document id lui-même
-        Map<Long, Optional<DocumentVersionDTO>> latestByParentId = allDocuments.stream()
-            .collect(Collectors.groupingBy(
-                dto -> dto.getParentDocumentId() != null ? dto.getParentDocumentId() : dto.getId(),
-                Collectors.maxBy(Comparator.comparing(DocumentVersionDTO::getUpdatedAt))
-            ));
-
-        // Transformers la map en liste des dernières versions
-        return latestByParentId.values().stream()
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .collect(Collectors.toList());
+  "name": "Authentication Banking Service",
+  "trigramme": "ABB",
+  "description": "Service central d'authentification pour toutes les applications bancaires avec support OAuth2, JWT et MFA",
+  "bridgeCommunication": true,
+  "criticality": "Critique",
+  "poCoedev": "Jean Dupont",
+  "techlead": "Marie Martin",
+  "java17Migrated": true,
+  "sonarized": true,
+  "sonarReportUrl": "https://sonar.bankingsolutions.com/dashboard?id=authentication-service",
+  "version": "2.5.0",
+  "infrastructure": {
+    "urlInt": "https://int-auth.bankingsolutions.com",
+    "urlUat": "https://uat-auth.bankingsolutions.com",
+    "urlOat": "https://oat-auth.bankingsolutions.com",
+    "urlProd": "https://auth.bankingsolutions.com"
+  },
+  "dataSources": {
+    "rabbitMQ": true,
+    "commonDB": false,
+    "dedicatedDB": true,
+    "s3": false
+  },
+  "clientConsumers": [
+    "MobileBanking",
+    "WebPortal",
+    "ATMInterface",
+    "BranchSystemApp"
+  ],
+  "consumes": [
+    "DirectoryService",
+    "BiometricValidationAPI",
+    "AuditLogger"
+  ],
+  "consumedBy": [
+    "LoanProcessingSystem",
+    "AccountManagementSystem",
+    "CardIssuanceService",
+    "CustomerPortal"
+  ],
+  "endpoints": [
+    {
+      "method": "POST",
+      "path": "/api/v2/auth/login",
+      "curl": "curl -X POST https://auth.bankingsolutions.com/api/v2/auth/login -H 'Content-Type: application/json' -d '{\"username\":\"customer123\",\"password\":\"securePass\",\"deviceId\":\"MOB-IOS-12345\"}'",
+      "expectedResponse": "{\"accessToken\":\"eyJhbGciOiJS...\",\"refreshToken\":\"eyR2eXAiOi...\",\"expiresIn\":1800,\"userProfile\":{\"id\":\"U98765\",\"role\":\"CUSTOMER\",\"lastLogin\":\"2023-10-17T08:45:23Z\"}}",
+      "description": "Authentification d'un client bancaire et génération des tokens d'accès"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/auth/mfa/verify",
+      "curl": "curl -X POST https://auth.bankingsolutions.com/api/v2/auth/mfa/verify -H 'Content-Type: application/json' -H 'Authorization: Bearer eyJhbGciOiJS...' -d '{\"mfaCode\":\"123456\",\"mfaType\":\"SMS\"}'",
+      "expectedResponse": "{\"verified\":true,\"sessionToken\":\"eyJhbGcRTY...\",\"sessionExpiry\":\"2023-10-17T10:45:23Z\"}",
+      "description": "Vérification de l'authentification à deux facteurs"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/auth/token/refresh",
+      "curl": "curl -X POST https://auth.bankingsolutions.com/api/v2/auth/token/refresh -H 'Content-Type: application/json' -d '{\"refreshToken\":\"eyR2eXAiOi...\"}'",
+      "expectedResponse": "{\"accessToken\":\"eyJuZXdh...\",\"expiresIn\":1800}",
+      "description": "Renouvellement du token d'accès à l'aide du token de rafraîchissement"
     }
+  ],
+  "databaseSchema": "banking_auth_schema"
 }
 
 
@@ -90,31 +214,3 @@ public class GetLatestDocumentVersionsImpl implements GetLatestDocumentVersions 
 
 
 
-
-----------------------------
-
-
-@Service
-@RequiredArgsConstructor
-public class GetLatestDocumentVersionsImpl implements GetLatestDocumentVersions {
-
-    private final DocumentRepository documentRepository;
-
-    @Override
-    public List<DocumentVersionDTO> handle(GetLatestDocumentVersionsRequest input, RequestContext context) {
-        // Récupère tous les documents sous forme d'entités
-        List<DocumentEntity> allDocuments = documentRepository.findAll();
-
-        return allDocuments.stream()
-            // Map vers la dernière version du document en fonction du parentId
-            .map(doc -> documentRepository.findTopByParentDocumentIdOrderByUpdatedAtDesc(doc.getId())
-                .orElse(doc))
-            // Tri des documents par date de mise à jour, du plus récent au plus ancien
-            .sorted(Comparator.comparing(DocumentEntity::getUpdatedAt).reversed())
-            // Limiter les résultats aux 5 plus récents
-            .limit(5)
-            // Conversion des entités vers les DTO correspondants
-            .map(DocumentVersionDTO::fromEntity)
-            .collect(Collectors.toList());
-    }
-}

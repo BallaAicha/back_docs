@@ -97,15 +97,7 @@ public class APIServiceMapper {
         dto.setDescription(entity.getDescription());
         dto.setDatabaseSchema(entity.getDatabaseSchema());
 
-        // Nouveaux attributs
-        dto.setBridgeCommunication(entity.isBridgeCommunication());
-        dto.setCriticality(entity.getCriticality());
-        dto.setPoCoedev(entity.getPoCoedev());
-        dto.setTechlead(entity.getTechlead());
-        dto.setJava17Migrated(entity.isJava17Migrated());
-        dto.setSonarized(entity.isSonarized());
-        dto.setSonarReportUrl(entity.getSonarReportUrl());
-        dto.setVersion(entity.getVersion());
+
 
         // Infrastructure
         dto.setInfrastructure(toInfrastructureDTO(entity.getInfrastructure()));
@@ -140,15 +132,7 @@ public class APIServiceMapper {
         entity.setDescription(request.getDescription());
         entity.setDatabaseSchema(request.getDatabaseSchema());
 
-        // Nouveaux attributs
-        entity.setBridgeCommunication(request.isBridgeCommunication());
-        entity.setCriticality(request.getCriticality());
-        entity.setPoCoedev(request.getPoCoedev());
-        entity.setTechlead(request.getTechlead());
-        entity.setJava17Migrated(request.isJava17Migrated());
-        entity.setSonarized(request.isSonarized());
-        entity.setSonarReportUrl(request.getSonarReportUrl());
-        entity.setVersion(request.getVersion());
+
 
         entity.setInfrastructure(toInfrastructure(request.getInfrastructure()));
         entity.setDataSources(toDataSources(request.getDataSources()));
