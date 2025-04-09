@@ -214,3 +214,35 @@ public APIServiceDTO toDTO(APIService entity) {
 
 
 
+
+
+ // Nouveaux attributs
+    @Column(name = "bridge_communication")
+    private boolean bridgeCommunication;
+
+    @Column(name = "criticality")
+    private String criticality;
+
+    @Column(name = "po_coedev")
+    private String poCoedev;
+
+    @Column(name = "techlead")
+    private String techlead;
+
+    @Column(name = "java17_migrated")
+    private boolean java17Migrated;
+
+    @Column(name = "sonarized")
+    private boolean sonarized;
+
+    @Column(name = "sonar_report_url")
+    private String sonarReportUrl;
+
+    @Column(name = "version")
+    private String version;
+
+
+
+
+
+

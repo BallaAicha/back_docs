@@ -56,7 +56,6 @@ public class APIService {
     @Column(name = "updated_at")
     private ZonedDateTime updatedAt;
 
-
     // Nouveaux attributs
     @Column(name = "bridge_communication")
     private boolean bridgeCommunication;
@@ -81,5 +80,7 @@ public class APIService {
 
     @Column(name = "version")
     private String version;
+
+
 
 }
