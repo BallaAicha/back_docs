@@ -25,7 +25,7 @@ public class APIService {
 
     private String description;
 
-    @OneToOne(cascade = CascadeType.ALL)// cad un api a une seule infrastructure ce qui
+    @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "infrastructure_id")
     private Infrastructure infrastructure;
 
@@ -55,4 +55,31 @@ public class APIService {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private ZonedDateTime updatedAt;
+
+
+    // Nouveaux attributs
+    @Column(name = "bridge_communication")
+    private boolean bridgeCommunication;
+
+    @Column(name = "criticality")
+    private String criticality;
+
+    @Column(name = "po_coedev")
+    private String poCoedev;
+
+    @Column(name = "techlead")
+    private String techlead;
+
+    @Column(name = "java17_migrated")
+    private boolean java17Migrated;
+
+    @Column(name = "sonarized")
+    private boolean sonarized;
+
+    @Column(name = "sonar_report_url")
+    private String sonarReportUrl;
+
+    @Column(name = "version")
+    private String version;
+
 }

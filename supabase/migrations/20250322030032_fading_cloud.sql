@@ -107,3 +107,49 @@ CREATE TABLE IF NOT EXISTS endpoint (
                                         created_at TIMESTAMPTZ DEFAULT now(),
                                         updated_at TIMESTAMPTZ DEFAULT now()
 );
+
+
+-- Add new columns to existing api_service table
+ALTER TABLE api_service
+    ADD COLUMN IF NOT EXISTS bridge_communication BOOLEAN DEFAULT false,
+    ADD COLUMN IF NOT EXISTS criticality VARCHAR(50),
+    ADD COLUMN IF NOT EXISTS po_coedev VARCHAR(255),
+    ADD COLUMN IF NOT EXISTS techlead VARCHAR(255),
+    ADD COLUMN IF NOT EXISTS java17_migrated BOOLEAN DEFAULT false,
+    ADD COLUMN IF NOT EXISTS sonarized BOOLEAN DEFAULT false,
+    ADD COLUMN IF NOT EXISTS sonar_report_url VARCHAR(255),
+    ADD COLUMN IF NOT EXISTS version VARCHAR(50);
+
+
+
+
+
+<!-- Liquibase migration to add new columns to api_service table -->
+<changeSet id="add-columns-to-api_service" author="your_name">
+    <addColumn tableName="api_service">
+        <column name="bridge_communication" type="BOOLEAN" defaultValueBoolean="false">
+            <constraints nullable="true"/>
+        </column>
+        <column name="criticality" type="VARCHAR(50)">
+            <constraints nullable="true"/>
+        </column>
+        <column name="po_coedev" type="VARCHAR(255)">
+            <constraints nullable="true"/>
+        </column>
+        <column name="techlead" type="VARCHAR(255)">
+            <constraints nullable="true"/>
+        </column>
+        <column name="java17_migrated" type="BOOLEAN" defaultValueBoolean="false">
+            <constraints nullable="true"/>
+        </column>
+        <column name="sonarized" type="BOOLEAN" defaultValueBoolean="false">
+            <constraints nullable="true"/>
+        </column>
+        <column name="sonar_report_url" type="VARCHAR(255)">
+            <constraints nullable="true"/>
+        </column>
+        <column name="version" type="VARCHAR(50)">
+            <constraints nullable="true"/>
+        </column>
+    </addColumn>
+</changeSet>

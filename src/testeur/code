@@ -84,3 +84,37 @@ public class GetLatestDocumentVersionsImpl implements GetLatestDocumentVersions 
             .collect(Collectors.toList());
     }
 }
+
+
+
+
+
+
+
+----------------------------
+
+
+@Service
+@RequiredArgsConstructor
+public class GetLatestDocumentVersionsImpl implements GetLatestDocumentVersions {
+
+    private final DocumentRepository documentRepository;
+
+    @Override
+    public List<DocumentVersionDTO> handle(GetLatestDocumentVersionsRequest input, RequestContext context) {
+        // Récupère tous les documents sous forme d'entités
+        List<DocumentEntity> allDocuments = documentRepository.findAll();
+
+        return allDocuments.stream()
+            // Map vers la dernière version du document en fonction du parentId
+            .map(doc -> documentRepository.findTopByParentDocumentIdOrderByUpdatedAtDesc(doc.getId())
+                .orElse(doc))
+            // Tri des documents par date de mise à jour, du plus récent au plus ancien
+            .sorted(Comparator.comparing(DocumentEntity::getUpdatedAt).reversed())
+            // Limiter les résultats aux 5 plus récents
+            .limit(5)
+            // Conversion des entités vers les DTO correspondants
+            .map(DocumentVersionDTO::fromEntity)
+            .collect(Collectors.toList());
+    }
+}
