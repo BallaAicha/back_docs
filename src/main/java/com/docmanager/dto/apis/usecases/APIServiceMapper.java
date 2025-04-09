@@ -98,6 +98,15 @@ public class APIServiceMapper {
         dto.setDatabaseSchema(entity.getDatabaseSchema());
 
 
+        dto.setBridgeCommunication(entity.isBridgeCommunication());
+        dto.setCriticality(entity.getCriticality());
+        dto.setPoCoedev(entity.getPoCoedev());
+        dto.setTechlead(entity.getTechlead());
+        dto.setJava17Migrated(entity.isJava17Migrated());
+        dto.setSonarized(entity.isSonarized());
+        dto.setSonarReportUrl(entity.getSonarReportUrl());
+        dto.setVersion(entity.getVersion());
+
 
         // Infrastructure
         dto.setInfrastructure(toInfrastructureDTO(entity.getInfrastructure()));

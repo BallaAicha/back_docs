@@ -246,3 +246,19 @@ public APIServiceDTO toDTO(APIService entity) {
 
 
 
+
+ // Nouveaux attributs
+    entity.setBridgeCommunication(request.isBridgeCommunication());
+    entity.setCriticality(request.getCriticality());
+    entity.setPoCoedev(request.getPoCoedev());
+    entity.setTechlead(request.getTechlead());
+    entity.setJava17Migrated(request.isJava17Migrated());
+    entity.setSonarized(request.isSonarized());
+    entity.setSonarReportUrl(request.getSonarReportUrl());
+    entity.setVersion(request.getVersion());
+
+
+
+
+
+
