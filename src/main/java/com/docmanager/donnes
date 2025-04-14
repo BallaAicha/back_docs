@@ -1,0 +1,414 @@
+### 1. Création des DTO
+
+package com.docmanager.dto.presentations;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
+import java.util.UUID;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class PresentationDTO {
+    private UUID id;
+    private String title;
+    private LocalDate date;
+    private String duration;
+    private String status;
+    private String image;
+}
+
+
+
+
+package com.docmanager.dto.presentations;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class CreatePresentationRequest {
+    private String title;
+    private LocalDate date;
+    private String duration;
+    private String status;
+    private String image;
+}
+
+
+
+
+
+package com.docmanager.dto.presentations.entities;
+
+import jakarta.persistence.*;
+import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDate;
+import java.time.ZonedDateTime;
+import java.util.UUID;
+
+@Entity
+@Data
+@Table(name = "presentations")
+public class Presentation {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
+
+    @Column(nullable = false)
+    private String title;
+
+    @Column(nullable = false)
+    private LocalDate date;
+
+    @Column(nullable = false)
+    private String duration;
+
+    @Column(nullable = false)
+    private String status;
+
+    private String image;
+
+    @CreationTimestamp
+    @Column(name = "created_at")
+    private ZonedDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private ZonedDateTime updatedAt;
+}
+
+
+
+
+package com.docmanager.dto.presentations.usecases;
+
+import com.docmanager.dto.apis.Command;
+import com.docmanager.dto.apis.RequestContext;
+import com.docmanager.dto.presentations.CreatePresentationRequest;
+import com.docmanager.dto.presentations.PresentationDTO;
+
+public interface CreatePresentation extends Command {
+    PresentationDTO handle(CreatePresentationRequest input, RequestContext context);
+}
+
+
+
+
+
+package com.docmanager.dto.presentations.usecases;
+
+import com.docmanager.dto.apis.Query;
+import com.docmanager.dto.apis.RequestContext;
+import com.docmanager.dto.presentations.PresentationDTO;
+
+import java.util.List;
+
+public interface GetRecentPresentations extends Query {
+    List<PresentationDTO> handle(int limit, RequestContext context);
+}
+
+
+
+package com.docmanager.dto.presentations.repositories;
+
+import com.docmanager.dto.presentations.entities.Presentation;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.UUID;
+
+@Repository
+public interface PresentationRepository extends JpaRepository<Presentation, UUID> {
+
+    @Query("SELECT p FROM Presentation p ORDER BY p.date DESC")
+    List<Presentation> findRecentPresentations();
+
+    @Query(value = "SELECT * FROM presentations ORDER BY date DESC LIMIT :limit", nativeQuery = true)
+    List<Presentation> findRecentPresentationsWithLimit(@Param("limit") int limit);
+}
+
+
+
+
+package com.docmanager.dto.presentations.usecases.impl;
+
+import com.docmanager.dto.apis.RequestContext;
+import com.docmanager.dto.presentations.CreatePresentationRequest;
+import com.docmanager.dto.presentations.PresentationDTO;
+import com.docmanager.dto.presentations.entities.Presentation;
+import com.docmanager.dto.presentations.repositories.PresentationRepository;
+import com.docmanager.dto.presentations.usecases.CreatePresentation;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class CreatePresentationImpl implements CreatePresentation {
+
+    private final PresentationRepository presentationRepository;
+
+    @Autowired
+    public CreatePresentationImpl(PresentationRepository presentationRepository) {
+        this.presentationRepository = presentationRepository;
+    }
+
+    @Override
+    @Transactional
+    public PresentationDTO handle(CreatePresentationRequest input, RequestContext context) {
+        Presentation presentation = new Presentation();
+        presentation.setTitle(input.getTitle());
+        presentation.setDate(input.getDate());
+        presentation.setDuration(input.getDuration());
+        presentation.setStatus(input.getStatus());
+        presentation.setImage(input.getImage());
+
+        Presentation savedPresentation = presentationRepository.save(presentation);
+
+        return toDTO(savedPresentation);
+    }
+
+    private PresentationDTO toDTO(Presentation entity) {
+        PresentationDTO dto = new PresentationDTO();
+        dto.setId(entity.getId());
+        dto.setTitle(entity.getTitle());
+        dto.setDate(entity.getDate());
+        dto.setDuration(entity.getDuration());
+        dto.setStatus(entity.getStatus());
+        dto.setImage(entity.getImage());
+
+        return dto;
+    }
+}
+
+
+
+
+package com.docmanager.dto.presentations.usecases.impl;
+
+import com.docmanager.dto.apis.RequestContext;
+import com.docmanager.dto.presentations.PresentationDTO;
+import com.docmanager.dto.presentations.entities.Presentation;
+import com.docmanager.dto.presentations.repositories.PresentationRepository;
+import com.docmanager.dto.presentations.usecases.GetRecentPresentations;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class GetRecentPresentationsImpl implements GetRecentPresentations {
+
+    private final PresentationRepository presentationRepository;
+
+    @Autowired
+    public GetRecentPresentationsImpl(PresentationRepository presentationRepository) {
+        this.presentationRepository = presentationRepository;
+    }
+
+    @Override
+    public List<PresentationDTO> handle(int limit, RequestContext context) {
+        List<Presentation> presentations = presentationRepository.findRecentPresentationsWithLimit(limit);
+
+        return presentations.stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    private PresentationDTO toDTO(Presentation entity) {
+        PresentationDTO dto = new PresentationDTO();
+        dto.setId(entity.getId());
+        dto.setTitle(entity.getTitle());
+        dto.setDate(entity.getDate());
+        dto.setDuration(entity.getDuration());
+        dto.setStatus(entity.getStatus());
+        dto.setImage(entity.getImage());
+
+        return dto;
+    }
+}
+
+
+
+package com.docmanager.controllers;
+
+import com.docmanager.dto.apis.RequestContext;
+import com.docmanager.dto.presentations.CreatePresentationRequest;
+import com.docmanager.dto.presentations.PresentationDTO;
+import com.docmanager.dto.presentations.usecases.CreatePresentation;
+import com.docmanager.dto.presentations.usecases.GetRecentPresentations;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/presentations")
+public class PresentationController {
+
+    private final CreatePresentation createPresentation;
+    private final GetRecentPresentations getRecentPresentations;
+
+    @Autowired
+    public PresentationController(CreatePresentation createPresentation,
+                                GetRecentPresentations getRecentPresentations) {
+        this.createPresentation = createPresentation;
+        this.getRecentPresentations = getRecentPresentations;
+    }
+
+    @PostMapping
+    public ResponseEntity<PresentationDTO> createPresentation(@RequestBody CreatePresentationRequest request) {
+        PresentationDTO presentationDTO = createPresentation.handle(request, new RequestContext());
+        return new ResponseEntity<>(presentationDTO, HttpStatus.CREATED);
+    }
+
+    @GetMapping("/recent")
+    public ResponseEntity<List<PresentationDTO>> getRecentPresentations(
+            @RequestParam(value = "limit", defaultValue = "5") int limit) {
+        List<PresentationDTO> presentations = getRecentPresentations.handle(limit, new RequestContext());
+        return ResponseEntity.ok(presentations);
+    }
+}
+
+
+
+
+
+
+package com.docmanager.dto.presentations.mappers;
+
+import com.docmanager.dto.presentations.PresentationDTO;
+import com.docmanager.dto.presentations.entities.Presentation;
+import org.springframework.stereotype.Component;
+
+@Component
+public class PresentationMapper {
+
+    public PresentationDTO toDTO(Presentation entity) {
+        if (entity == null) {
+            return null;
+        }
+
+        PresentationDTO dto = new PresentationDTO();
+        dto.setId(entity.getId());
+        dto.setTitle(entity.getTitle());
+        dto.setDate(entity.getDate());
+        dto.setDuration(entity.getDuration());
+        dto.setStatus(entity.getStatus());
+        dto.setImage(entity.getImage());
+
+        return dto;
+    }
+
+    public Presentation toEntity(PresentationDTO dto) {
+        if (dto == null) {
+            return null;
+        }
+
+        Presentation entity = new Presentation();
+        entity.setId(dto.getId());
+        entity.setTitle(dto.getTitle());
+        entity.setDate(dto.getDate());
+        entity.setDuration(dto.getDuration());
+        entity.setStatus(dto.getStatus());
+        entity.setImage(dto.getImage());
+
+        return entity;
+    }
+}
+
+
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.5.xsd">
+
+    <changeSet id="20240415-create-presentations-table" author="docmanager">
+        <createTable tableName="presentations">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="title" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date" type="date">
+                <constraints nullable="false"/>
+            </column>
+            <column name="duration" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="image" type="varchar(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex indexName="idx_presentation_date" tableName="presentations">
+            <column name="date"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Optionnel : Changeset pour ajouter des données d'exemple -->
+    <changeSet id="20240415-add-sample-presentations" author="docmanager">
+        <insert tableName="presentations">
+            <column name="id" value="${uuid()}"/>
+            <column name="title" value="Formation sur les Normes de Dev"/>
+            <column name="date" value="2024-03-15"/>
+            <column name="duration" value="1h30"/>
+            <column name="status" value="En cours"/>
+            <column name="image" value="/assets/presentation1.jpg"/>
+            <column name="created_at" valueDate="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" valueDate="CURRENT_TIMESTAMP"/>
+        </insert>
+        <insert tableName="presentations">
+            <column name="id" value="${uuid()}"/>
+            <column name="title" value="Architecture Microservices"/>
+            <column name="date" value="2024-04-02"/>
+            <column name="duration" value="2h00"/>
+            <column name="status" value="Terminé"/>
+            <column name="image" value="/assets/presentation2.jpg"/>
+            <column name="created_at" valueDate="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" valueDate="CURRENT_TIMESTAMP"/>
+        </insert>
+        <insert tableName="presentations">
+            <column name="id" value="${uuid()}"/>
+            <column name="title" value="Sécurité des APIs"/>
+            <column name="date" value="2024-04-10"/>
+            <column name="duration" value="1h45"/>
+            <column name="status" value="Planifié"/>
+            <column name="image" value="/assets/presentation3.jpg"/>
+            <column name="created_at" valueDate="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" valueDate="CURRENT_TIMESTAMP"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

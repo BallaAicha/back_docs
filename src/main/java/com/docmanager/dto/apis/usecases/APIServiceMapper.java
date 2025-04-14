@@ -89,45 +89,45 @@ public class APIServiceMapper {
 //    }
 
 
-    public APIServiceDTO toDTO(APIService entity) {
-        APIServiceDTO dto = new APIServiceDTO();
-        dto.setId(entity.getId());
-        dto.setName(entity.getName());
-        dto.setTrigramme(entity.getTrigramme());
-        dto.setDescription(entity.getDescription());
-        dto.setDatabaseSchema(entity.getDatabaseSchema());
-
-
-        dto.setBridgeCommunication(entity.isBridgeCommunication());
-        dto.setCriticality(entity.getCriticality());
-        dto.setPoCoedev(entity.getPoCoedev());
-        dto.setTechlead(entity.getTechlead());
-        dto.setJava17Migrated(entity.isJava17Migrated());
-        dto.setSonarized(entity.isSonarized());
-        dto.setSonarReportUrl(entity.getSonarReportUrl());
-        dto.setVersion(entity.getVersion());
-
-
-        // Infrastructure
-        dto.setInfrastructure(toInfrastructureDTO(entity.getInfrastructure()));
-
-        // DataSources
-        dto.setDataSources(toDataSourceDTO(entity.getDataSources()));
-
-        dto.setClientConsumers(entity.getClientConsumers()
-                .stream().map(ClientConsumer::getName).toList());
-
-        dto.setConsumes(entity.getConsumes()
-                .stream().map(Consumes::getName).toList());
-
-        dto.setConsumedBy(entity.getConsumedBy()
-                .stream().map(ConsumedBy::getName).toList());
-
-        dto.setEndpoints(entity.getEndpoints()
-                .stream().map(this::toEndpointDTO).toList());
-
-        return dto;
-    }
+//    public APIServiceDTO toDTO(APIService entity) {
+//        APIServiceDTO dto = new APIServiceDTO();
+//        dto.setId(entity.getId());
+//        dto.setName(entity.getName());
+//        dto.setTrigramme(entity.getTrigramme());
+//        dto.setDescription(entity.getDescription());
+//        dto.setDatabaseSchema(entity.getDatabaseSchema());
+//
+//
+//        dto.setBridgeCommunication(entity.isBridgeCommunication());
+//        dto.setCriticality(entity.getCriticality());
+//        dto.setPoCoedev(entity.getPoCoedev());
+//        dto.setTechlead(entity.getTechlead());
+//        dto.setJava17Migrated(entity.isJava17Migrated());
+//        dto.setSonarized(entity.isSonarized());
+//        dto.setSonarReportUrl(entity.getSonarReportUrl());
+//        dto.setVersion(entity.getVersion());
+//
+//
+//        // Infrastructure
+//        dto.setInfrastructure(toInfrastructureDTO(entity.getInfrastructure()));
+//
+//        // DataSources
+//        dto.setDataSources(toDataSourceDTO(entity.getDataSources()));
+//
+//        dto.setClientConsumers(entity.getClientConsumers()
+//                .stream().map(ClientConsumer::getName).toList());
+//
+//        dto.setConsumes(entity.getConsumes()
+//                .stream().map(Consumes::getName).toList());
+//
+//        dto.setConsumedBy(entity.getConsumedBy()
+//                .stream().map(ConsumedBy::getName).toList());
+//
+//        dto.setEndpoints(entity.getEndpoints()
+//                .stream().map(this::toEndpointDTO).toList());
+//
+//        return dto;
+//    }
 
     public APIService fromRequest(CreateAPIServiceRequest request) {
         APIService service = new APIService();
