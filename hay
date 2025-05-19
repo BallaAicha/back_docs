@@ -1,0 +1,263 @@
+package com.socgen.unibank.services.autotest.gateways.outbound.persistence.jpa;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Table(name = "users") // table en minuscules
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "first_name", nullable = false)
+    private String firstName;
+
+    @Column(name = "last_name", nullable = false)
+    private String lastName;
+
+    @Column(nullable = false)
+    private String status;
+
+    @Column(nullable = false, unique = true)
+    private String igg;
+
+    @Column(nullable = false)
+    private String role;
+
+    @Column(nullable = false, unique = true)
+    private String mail;
+
+    @Column
+    private String country;
+
+    @Column
+    private String job;
+
+    @Column(name = "service_name")
+    private String serviceName;
+
+    public static UserEntity fromDomain(UserDTO userDTO) {
+        return UserEntity.builder()
+                .id(userDTO.getId())
+                .firstName(userDTO.getFirstName())
+                .lastName(userDTO.getLastName())
+                .status(userDTO.getStatus())
+                .igg(userDTO.getIgg())
+                .role(userDTO.getRole())
+                .mail(userDTO.getMail())
+                .country(userDTO.getCountry())
+                .job(userDTO.getJob())
+                .serviceName(userDTO.getServiceName())
+                .build();
+    }
+
+    public UserDTO toDomain() {
+        return UserDTO.builder()
+                .id(this.id)
+                .firstName(this.firstName)
+                .lastName(this.lastName)
+                .status(this.status)
+                .igg(this.igg)
+                .role(this.role)
+                .mail(this.mail)
+                .country(this.country)
+                .job(this.job)
+                .serviceName(this.serviceName)
+                .build();
+    }
+}
+
+
+-----------
+package com.socgen.unibank.services.autotest.gateways.outbound.persistence.jpa;
+
+import jakarta.persistence.*;
+import lombok.*;
+import java.util.*;
+
+@Entity
+@Table(name = "roles") // table en minuscules
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class Role {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, unique = true)
+    private String name;
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "role_id")
+    private List<Permission> permissions = new ArrayList<>();
+
+    public static Role fromDomain(RoleDTO roleDTO) {
+        Role role = Role.builder()
+                .id(roleDTO.getId())
+                .name(roleDTO.getName())
+                .build();
+
+        if (roleDTO.getPermissions() != null) {
+            role.setPermissions(roleDTO.getPermissions().stream()
+                    .map(Permission::fromDomain)
+                    .collect(Collectors.toList()));
+        }
+
+        return role;
+    }
+
+    public RoleDTO toDomain() {
+        RoleDTO roleDTO = RoleDTO.builder()
+                .id(this.id)
+                .name(this.name)
+                .build();
+
+        if (this.permissions != null) {
+            roleDTO.setPermissions(this.permissions.stream()
+                    .map(Permission::toDomain)
+                    .collect(Collectors.toList()));
+        }
+
+        return roleDTO;
+    }
+}
+-------------
+package com.socgen.unibank.services.autotest.gateways.outbound.persistence.jpa;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Table(name = "permissions") // table en minuscules
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class Permission {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private boolean read;
+    private boolean create;
+    private boolean update;
+    private boolean delete;
+
+    public static Permission fromDomain(PermissionDTO permissionDTO) {
+        return Permission.builder()
+                .id(permissionDTO.getId())
+                .read(permissionDTO.isRead())
+                .create(permissionDTO.isCreate())
+                .update(permissionDTO.isUpdate())
+                .delete(permissionDTO.isDelete())
+                .build();
+    }
+
+    public PermissionDTO toDomain() {
+        return PermissionDTO.builder()
+                .id(this.id)
+                .read(this.read)
+                .create(this.create)
+                .update(this.update)
+                .delete(this.delete)
+                .build();
+    }
+}
+
+------------
+
+
+
+
+
+<changeSet id="create-users-roles-permissions-tables" author="developer">
+    <!-- Create permissions table -->
+    <createTable tableName="permissions">
+        <column name="id" type="BIGINT" autoIncrement="true">
+            <constraints primaryKey="true" nullable="false"/>
+        </column>
+        <column name="read" type="BOOLEAN" defaultValueBoolean="false">
+            <constraints nullable="false"/>
+        </column>
+        <column name="create" type="BOOLEAN" defaultValueBoolean="false">
+            <constraints nullable="false"/>
+        </column>
+        <column name="update" type="BOOLEAN" defaultValueBoolean="false">
+            <constraints nullable="false"/>
+        </column>
+        <column name="delete" type="BOOLEAN" defaultValueBoolean="false">
+            <constraints nullable="false"/>
+        </column>
+        <column name="role_id" type="BIGINT">
+            <constraints nullable="true"/>
+        </column>
+    </createTable>
+
+    <!-- Create roles table -->
+    <createTable tableName="roles">
+        <column name="id" type="BIGINT" autoIncrement="true">
+            <constraints primaryKey="true" nullable="false"/>
+        </column>
+        <column name="name" type="VARCHAR(255)">
+            <constraints nullable="false" unique="true"/>
+        </column>
+    </createTable>
+
+    <!-- Create users table -->
+    <createTable tableName="users">
+        <column name="id" type="BIGINT" autoIncrement="true">
+            <constraints primaryKey="true" nullable="false"/>
+        </column>
+        <column name="first_name" type="VARCHAR(255)">
+            <constraints nullable="false"/>
+        </column>
+        <column name="last_name" type="VARCHAR(255)">
+            <constraints nullable="false"/>
+        </column>
+        <column name="status" type="VARCHAR(50)">
+            <constraints nullable="false"/>
+        </column>
+        <column name="igg" type="VARCHAR(255)">
+            <constraints nullable="false" unique="true"/>
+        </column>
+        <column name="role" type="VARCHAR(255)">
+            <constraints nullable="false"/>
+        </column>
+        <column name="mail" type="VARCHAR(255)">
+            <constraints nullable="false" unique="true"/>
+        </column>
+        <column name="country" type="VARCHAR(255)">
+            <constraints nullable="true"/>
+        </column>
+        <column name="job" type="VARCHAR(255)">
+            <constraints nullable="true"/>
+        </column>
+        <column name="service_name" type="VARCHAR(255)">
+            <constraints nullable="true"/>
+        </column>
+    </createTable>
+
+    <!-- Add foreign key constraint -->
+    <addForeignKeyConstraint baseTableName="permissions" baseColumnNames="role_id"
+                             constraintName="fk_permission_role"
+                             referencedTableName="roles" referencedColumnNames="id"
+                             onDelete="CASCADE"/>
+
+    <!-- Create indexes for better performance -->
+    <createIndex indexName="idx_user_igg" tableName="users">
+        <column name="igg"/>
+    </createIndex>
+    <createIndex indexName="idx_user_mail" tableName="users">
+        <column name="mail"/>
+    </createIndex>
+    <createIndex indexName="idx_role_name" tableName="roles">
+        <column name="name"/>
+    </createIndex>
+</changeSet>
