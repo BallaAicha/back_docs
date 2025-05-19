@@ -42,6 +42,19 @@ async function createUserInBackend(token: string, userInfo: any): Promise<void> 
       role: 'USER' // Default role for new users
     };
 
+
+
+    const createUserRequest = {
+      igg: userInfo.sgigg || userInfo.sub || '', // IGG (privilégier sgigg puis sub)
+      mail: userInfo.mail || userInfo.email || '',
+      firstName: userInfo.givenname || '',
+      lastName: userInfo.sn || '',
+      country: userInfo.c || '',
+      job: userInfo.sgiob || '',
+      serviceName: userInfo.sgservicename || '',
+      role: 'USER'
+    };
+
     console.log('User creation request:', createUserRequest);
 
     const response = await fetch(apiUrl, {
