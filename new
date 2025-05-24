@@ -1,100 +1,247 @@
+export interface User {
+  id: number;
+  firstName: string;
+  lastName: string;
+  status: string;
+  igg: string;
+  role: string;
+  mail: string;
+  country: string;
+  job: string;
+  serviceName: string;
+}
+
+export interface TeamMemberRequest {
+  teamSpaceId: string;
+  memberIgg: string;
+}
+
+
+
+
+------------
 import { apiClient } from '../config/apiClient';
+import { User, TeamMemberRequest } from '../types/user';
 
-interface CreateTeamSpaceDto {
-  name: string;
-  description: string;
-}
-
-interface TeamSpaceResponse {
-  id: string;
-  name: string;
-  description: string;
-  // ajoutez d'autres champs selon votre API
-}
-
-export const teamSpaceService = {
-  createTeamSpace: async (data: CreateTeamSpaceDto): Promise<TeamSpaceResponse> => {
+export const userService = {
+  // Récupérer tous les utilisateurs
+  getUsers: async (): Promise<User[]> => {
     const token = localStorage.getItem('access_token');
-    const response = await apiClient.post('/api/team-spaces', data, {
+    const response = await apiClient.get('/api/users', {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
     return response.data;
   },
+
+  // Ajouter un membre à un espace
+  addTeamMember: async (data: TeamMemberRequest): Promise<void> => {
+    const token = localStorage.getItem('access_token');
+    await apiClient.post('/api/team-members', data, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
 };
 
+----------
 
+import { useState, useCallback } from 'react';
+import { userService } from '../services/userService';
+import { User, TeamMemberRequest } from '../types/user';
 
----------------
-
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { teamSpaceService } from '../services/teamSpaceService';
-
-interface UseTeamSpaceReturn {
+interface UseUsersReturn {
+  users: User[];
   loading: boolean;
   error: string | null;
-  createTeamSpace: (name: string, description: string) => Promise<void>;
+  fetchUsers: () => Promise<void>;
+  addTeamMember: (request: TeamMemberRequest) => Promise<void>;
 }
 
-export const useTeamSpace = (): UseTeamSpaceReturn => {
+export const useUsers = (): UseUsersReturn => {
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
 
-  const createTeamSpace = async (name: string, description: string) => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await teamSpaceService.createTeamSpace({ name, description });
-      navigate(`/team-spaces/${response.id}/add-members`);
+      const data = await userService.getUsers();
+      setUsers(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Une erreur est survenue');
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const addTeamMember = async (request: TeamMemberRequest) => {
+    try {
+      setLoading(true);
+      setError(null);
+      await userService.addTeamMember(request);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  return { loading, error, createTeamSpace };
+  return { users, loading, error, fetchUsers, addTeamMember };
 };
 
 
-
-------------
-
+---------
 
 
-// ... autres imports
-import { useTeamSpace } from '../hooks/useTeamSpace';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Search, UserPlus, Check, Users, AlertCircle } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { useUsers } from '../hooks/useUsers';
+import { User } from '../types/user';
 
-export const CreateTeamSpace = () => {
+export const AddTeamSpaceMembers = () => {
   const navigate = useNavigate();
-  const { loading, error, createTeamSpace } = useTeamSpace();
-  const [formData, setFormData] = useState({
-    name: '',
-    description: ''
-  });
+  const { id: teamSpaceId } = useParams<{ id: string }>();
+  const { users, loading, error, fetchUsers, addTeamMember } = useUsers();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [teamSpaceName, setTeamSpaceName] = useState('Nouvel espace');
+  const [submitting, setSubmitting] = useState(false);
 
-  // ... handleChange reste le même
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await createTeamSpace(formData.name, formData.description);
+  const filteredUsers = users.filter(user =>
+    `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.mail.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const toggleUserSelection = (igg: string) => {
+    setSelectedUsers(prev =>
+      prev.includes(igg)
+        ? prev.filter(id => id !== igg)
+        : [...prev, igg]
+    );
   };
+
+  const handleAddMembers = async () => {
+    if (!teamSpaceId || selectedUsers.length === 0) return;
+
+    setSubmitting(true);
+    try {
+      // Ajouter chaque utilisateur sélectionné
+      await Promise.all(
+        selectedUsers.map(igg =>
+          addTeamMember({
+            teamSpaceId,
+            memberIgg: igg
+          })
+        )
+      );
+      navigate(`/team-spaces/${teamSpaceId}`);
+    } catch (err) {
+      console.error('Erreur lors de l'ajout des membres:', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Rendu du composant de chargement
+  if (loading && !submitting) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-primary-600">Chargement des utilisateurs...</div>
+      </div>
+    );
+  }
 
   return (
-    // ... le reste du JSX reste le même, mais vous pouvez ajouter :
-    {error && (
-      <div className="text-red-600 mb-4">
-        {error}
+    <div className="bg-neutral-50 min-h-screen pb-12">
+      {/* ... Header reste le même ... */}
+
+      <div className="max-w-3xl mx-auto px-4 py-8">
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600">{error}</p>
+          </div>
+        )}
+
+        <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
+          {/* ... Reste du header et search input ... */}
+
+          <div className="max-h-[400px] overflow-y-auto">
+            {filteredUsers.length > 0 ? (
+              <ul className="divide-y divide-neutral-200">
+                {filteredUsers.map(user => (
+                  <li key={user.igg} className="px-4 py-3 hover:bg-neutral-50">
+                    <button
+                      onClick={() => toggleUserSelection(user.igg)}
+                      className="w-full flex items-center justify-between"
+                    >
+                      <div className="flex items-center">
+                        <div className="h-10 w-10 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-primary-600 font-medium">
+                            {user.firstName[0]}{user.lastName[0]}
+                          </span>
+                        </div>
+                        <div className="ml-3 text-left">
+                          <p className="font-medium text-neutral-800">
+                            {user.firstName} {user.lastName}
+                          </p>
+                          <p className="text-sm text-neutral-500">{user.mail}</p>
+                        </div>
+                      </div>
+
+                      <div className={`h-6 w-6 rounded-full flex items-center justify-center ${
+                        selectedUsers.includes(user.igg)
+                          ? 'bg-primary-600 text-white'
+                          : 'border-2 border-neutral-300'
+                      }`}>
+                        {selectedUsers.includes(user.igg) && (
+                          <Check className="h-4 w-4" />
+                        )}
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="p-8 text-center">
+                {/* ... Message "Aucun utilisateur trouvé" ... */}
+              </div>
+            )}
+          </div>
+
+          <div className="p-4 bg-neutral-50 border-t border-neutral-200">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleAddMembers}
+              disabled={selectedUsers.length === 0 || submitting}
+              className={`w-full py-2.5 px-4 rounded-lg font-medium flex items-center justify-center gap-2 ${
+                selectedUsers.length > 0 && !submitting
+                  ? 'bg-primary-600 hover:bg-primary-700 text-white'
+                  : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
+              }`}
+            >
+              <UserPlus className="h-5 w-5" />
+              {submitting
+                ? 'Ajout en cours...'
+                : `Ajouter ${selectedUsers.length > 0 ? `${selectedUsers.length} membre${selectedUsers.length > 1 ? 's' : ''}` : 'des membres'}`
+              }
+            </motion.button>
+          </div>
+        </div>
       </div>
-    )}
-    {loading && (
-      <div className="text-primary-600">
-        Chargement...
-      </div>
-    )}
-    // ...
+    </div>
   );
 };
+
+export default AddTeamSpaceMembers;
